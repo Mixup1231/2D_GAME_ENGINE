@@ -32,56 +32,56 @@ SDL_Window* render_init_window(u32 width, u32 height, const char* window_name) {
 }
 
 u32 render_init_shaders(const char* vertex_path, const char* fragment_path) {
-    u32 vertex_id = glCreateShader(GL_VERTEX_SHADER);
-
     File vertex_source = io_file_read(vertex_path);
-    if (!vertex_source.is_valid)
-        ERROR_EXIT("Failed to read vertex shader file!\n");
+    if (!vertex_source.is_valid) {
+        ERROR_RETURN(0, "Failed to read in vertex shader\n");
+    }
 
-    glShaderSource(vertex_id, 1, vertex_source.file_data, vertex_source.length);
-    glCompileShader(vertex_id);
+    u32 vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex_shader, 1, &vertex_source.file_data, NULL);
+    glCompileShader(vertex_shader);
     free(vertex_source.file_data);
 
     int success;
     char info_log[512];
-    glGetShaderiv(vertex_id, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertex_id, sizeof(info_log), NULL, info_log);
-        ERROR_EXIT("Vertex shader failed to compile with error:\n%s", info_log);
-    }
 
-    u32 fragment_id = glCreateShader(GL_FRAGMENT_SHADER);
+    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertex_shader, sizeof(info_log), NULL, info_log);
+        ERROR_RETURN(0, "Failed to compile vertex shader:\n%s", info_log);
+    }
 
     File fragment_source = io_file_read(fragment_path);
-    if (!fragment_source.is_valid)
-        ERROR_EXIT("Failed to read fragment shader file!\n");
+    if (!fragment_source.is_valid) {
+        ERROR_RETURN(0, "Failed to read in fragment shader\n");
+    }
 
-    glShaderSource(fragment_id, 1, fragment_source.file_data, fragment_source.length);
-    glCompileShader(fragment_id);
+    u32 fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragment_shader, 1, &fragment_source.file_data, NULL);
+    glCompileShader(fragment_shader);
     free(fragment_source.file_data);
 
-    glGetShaderiv(fragment_id, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(fragment_id, sizeof(info_log), NULL, info_log);
-        ERROR_EXIT("Fragment shader failed to compile with error:\n%s", info_log);
+        glGetShaderInfoLog(fragment_shader, sizeof(info_log), NULL, info_log);
+        ERROR_RETURN(0, "Failed to compile fragment shader:\n%s", info_log);
     }
 
-    u32 program_id = glCreateProgram();
+    u32 shader_program = glCreateProgram();
+    glAttachShader(shader_program, vertex_shader);
+    glAttachShader(shader_program, fragment_shader);
+    glLinkProgram(shader_program);
 
-    glAttachShader(program_id, vertex_id);
-    glAttachShader(program_id, fragment_id);
-    glLinkProgram(program_id);
-
-    glGetProgramiv(program_id, GL_LINK_STATUS, &success);
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(program_id, sizeof(info_log), NULL, info_log);
-        ERROR_EXIT("Failed to link program with error:\n%s", info_log);
+        glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
+        ERROR_RETURN(0, "Failed to link shaders:\n%s", info_log);
     }
 
-    glDeleteShader(vertex_id);
-    glDeleteShader(fragment_id);
+    glDeleteShader(vertex_shader);
+    glDeleteShader(fragment_shader);
 
-    return program_id;
+    return shader_program;
 }
 
 void render_init_texture_default(u32* texture_id) {
