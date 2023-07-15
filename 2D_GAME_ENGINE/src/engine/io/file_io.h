@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include "..\types.h"
 
-typedef struct file {
+typedef struct {
     char* file_data;
     usize length;
     bool is_valid;
