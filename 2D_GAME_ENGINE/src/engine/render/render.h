@@ -9,4 +9,4 @@ void render_begin(void);
 void render_end(void);
 
 void render_quad(vec2 position, vec2 size, vec4 colour);
-void render_line(void);
+void render_line(vec2 start, vec2 end, vec4 colour, u32 line_width);
