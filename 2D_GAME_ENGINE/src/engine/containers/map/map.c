@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <string.h>
 #include <math.h>
-#include <stdbool.h>
 
 #include "map.h"
 
@@ -117,7 +116,8 @@ void* map_get(Map* map, void* key) {
 	for (; i != NULL; i = i->next)
 		if (((KeyValue*)i->item)->pre_modulus == pre_modulus)
 			return ((KeyValue*)i->item)->item;
-	assert(true && "Failed to find value!");
+	
+	return NULL;
 }
 
 bool map_contains(Map* map, void* key) {

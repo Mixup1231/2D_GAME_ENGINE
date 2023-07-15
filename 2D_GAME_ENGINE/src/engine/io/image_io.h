@@ -3,7 +3,7 @@
 
 #include "..\types.h"
 
-typedef struct imageFile {
+typedef struct {
 	u8* image_data;
 	int width, height, channels;
 	bool is_valid;

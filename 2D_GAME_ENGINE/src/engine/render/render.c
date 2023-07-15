@@ -1,10 +1,15 @@
 #include <linmath.h>
+#include <stdio.h>
 
 #include "render.h"
 #include "render_internal.h"
+#include "../containers/map/map.h"
+#include "../io/image_io.h"
 #include "../util.h"
 
 static SDL_Window* window;
+
+static Map* texture_map;
 
 static u32 default_shader;
 static u32 default_texture;
@@ -37,6 +42,8 @@ SDL_Window* render_init(u32 width, u32 height, const char* window_name) {
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    texture_map = map_create(sizeof(u32), hash_string);
     
     return window;
 }
@@ -50,9 +57,14 @@ void render_end(void) {
     SDL_GL_SwapWindow(window);
 }
 
-void render_quad(vec2 position, vec2 size, vec4 colour) {
+void render_quad(vec2 position, vec2 size, vec4 colour, u32 texture) {
     glUseProgram(default_shader);
-    glBindTexture(GL_TEXTURE_2D, default_texture);
+
+    if (!texture)
+        glBindTexture(GL_TEXTURE_2D, default_texture);
+    else
+        glBindTexture(GL_TEXTURE_2D, texture);
+
     glBindVertexArray(vao_quad);
 
     mat4x4 model;
@@ -113,4 +125,46 @@ void render_line(vec2 start, vec2 end, vec4 colour, u32 line_width) {
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+u32 render_load_texture(const char* path, bool flip) {
+    if (map_contains(texture_map, path))
+        return *(u32*)map_get(texture_map, path);
+
+    ImageFile image = io_image_read(path, flip);
+    if (!image.is_valid)
+        ERROR_RETURN(0, "Failed to read image! %s\nReturning 0...\n", path);
+
+    u32 texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    switch (image.channels) {
+    case 2:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, image.width, image.height, 0, GL_RG, GL_UNSIGNED_BYTE, image.image_data);
+        break;
+    case 3:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.image_data);
+        break;
+    case 4:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.image_data);
+        break;
+    default:
+        io_image_free(image.image_data);
+        glDeleteTextures(1, &texture_id);
+        ERROR_RETURN(0, "Unsupported image channel count! %s\nReturning 0...\n", path);
+    }
+    
+    glGenerateMipmap(GL_TEXTURE_2D);
+    io_image_free(image.image_data);
+
+    map_insert(texture_map, path, &texture_id);
+
+    return texture_id;
 }
