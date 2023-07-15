@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <linmath.h>
 
 #include "engine/render/render.h"
 
@@ -20,7 +21,7 @@ int main(int argc, char* argv[])
 
         render_begin();
 
-        render_quad();
+        render_quad((vec2){1920 / 2, 1080 / 2}, (vec2){50, 50}, (vec4){1, 0, 0, 1});
 
         render_end();
     }
