@@ -4,7 +4,6 @@
 
 #include "serialise.h"
 #include "../util.h"
-#include "../types.h"
 
 bool io_serialise_struct(const char* filepath, void* buffer, usize size, usize count) {
     assert(filepath && buffer && "passed null to function!");

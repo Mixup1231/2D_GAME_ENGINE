@@ -13,12 +13,16 @@ static u32 vbo_quad;
 static u32 ebo_quad;
 static u32 vao_quad;
 
+static u32 vbo_line;
+static u32 vao_line;
+
 SDL_Window* render_init(u32 width, u32 height, const char* window_name) {
     window = render_init_window(width, height, window_name);
     
     default_shader = render_init_shaders("shaders/shader_default.vert", "shaders/shader_default.frag");
     render_init_texture_default(&default_texture);
     render_init_quad(&vbo_quad, &ebo_quad, &vao_quad);
+    render_init_line(&vbo_line, &vao_line);
 
     glUseProgram(default_shader);
     mat4x4 projection;
@@ -30,6 +34,9 @@ SDL_Window* render_init(u32 width, u32 height, const char* window_name) {
         projection
     );
     glUseProgram(0);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     return window;
 }
@@ -73,6 +80,37 @@ void render_quad(vec2 position, vec2 size, vec4 colour) {
     glUseProgram(0);
 }
 
-void render_line(void) {
+void render_line(vec2 start, vec2 end, vec4 colour, u32 line_width) {
+    glUseProgram(default_shader);
+    glLineWidth(line_width);
 
+    f32 x = end[0] - start[0];
+    f32 y = end[1] - start[1];
+    f32 line[6] = { 0, 0, 0, x, y, 0 };
+
+    mat4x4 model;
+    mat4x4_translate(model, start[0], start[1], 0);
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(default_shader, "model"),
+        1,
+        GL_FALSE,
+        model
+    );
+
+    glUniform4fv(
+        glGetUniformLocation(default_shader, "colour"),
+        1,
+        colour
+    );
+
+    glBindTexture(GL_TEXTURE_2D, default_texture);
+    glBindVertexArray(vao_line);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_line);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(line), line);
+    glDrawArrays(GL_LINES, 0, 2);
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
