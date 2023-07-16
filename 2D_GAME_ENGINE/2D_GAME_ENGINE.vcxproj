@@ -147,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\linmath.h" />
+    <ClInclude Include="src\engine\containers\bitset\bitset.h" />
     <ClInclude Include="src\engine\containers\linked_list\linked_list.h" />
     <ClInclude Include="src\engine\containers\map\map.h" />
     <ClInclude Include="src\engine\ecs\ecs.h" />
