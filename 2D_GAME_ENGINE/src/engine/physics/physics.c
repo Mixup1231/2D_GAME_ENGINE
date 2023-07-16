@@ -14,7 +14,7 @@ static Bitset32 dynamic_body_signature;
 static Bitset32 static_body_signature;
 
 vec2 physics_gravity = { 0, 10 };
-vec2 physics_terminal_velocity = { 1000, 1000 };
+vec2 physics_terminal_velocity = { 1000, 2000 };
 
 static ArrayList collided;
 
@@ -123,7 +123,7 @@ static void physics_update_dynamic_bodies(void) {
 			}
 		}
 
-		for (usize j = 0; j < collided.length; j++) {
+		for (usize i = 0; i < collided.length; i++) {
 			Hit hit = *(Hit*)array_list_get(&collided, i);
 			body->velocity[0] += hit.normal[0] * fabsf(body->velocity[0]) * (1 - hit.time);
 			body->velocity[1] += hit.normal[1] * fabsf(body->velocity[1]) * (1 - hit.time);
@@ -137,7 +137,7 @@ static void physics_update_dynamic_bodies(void) {
 		}
 
 		usize length = collided.length;
-		for (usize j = 0; j < length; j++)
+		for (usize i = 0; i < length; i++)
 			array_list_remove(&collided, 0);
 
 		body_aabb->position[0] += body->velocity[0];

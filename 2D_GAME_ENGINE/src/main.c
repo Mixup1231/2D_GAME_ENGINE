@@ -42,22 +42,53 @@ int main(int argc, char* argv[])
     usize block = ecs_create_entity();
     physics_insert_dynamic_body(block, (vec2) { width / 2, height / 2 }, (vec2) { 50, 50 }, COLLISION_LAYER_TERRAIN);
     render_insert_sprite(block, grass_block, (vec2) { 1, 1 }, WHITE);
+    DynamicBody* block_body = ecs_get_component(DynamicBody, block);
 
     usize floor = ecs_create_entity();
     physics_insert_static_body(floor, (vec2) { width / 2, height - 50 }, (vec2) { width, 100 }, COLLISION_LAYER_TERRAIN);
     render_insert_sprite(floor, 0, (vec2) { 1, 1 }, WHITE);
+
+    usize floor2 = ecs_create_entity();
+    physics_insert_static_body(floor2, (vec2) { width / 3, height - 200 }, (vec2) { 200, 100 }, COLLISION_LAYER_TERRAIN);
+    render_insert_sprite(floor2, 0, (vec2) { 1, 1 }, WHITE);
+
+    usize ceiling = ecs_create_entity();
+    physics_insert_static_body(ceiling, (vec2) { width / 2, 50 }, (vec2) { width, 100 }, COLLISION_LAYER_TERRAIN);
+    render_insert_sprite(ceiling, 0, (vec2) { 1, 1 }, WHITE);
+
+    usize wall = ecs_create_entity();
+    physics_insert_static_body(wall, (vec2) { 50, height / 2 }, (vec2) { 100, height }, COLLISION_LAYER_TERRAIN);
+    render_insert_sprite(wall, 0, (vec2) { 1, 1 }, WHITE);
+
+    usize wall2 = ecs_create_entity();
+    physics_insert_static_body(wall2, (vec2) { width - 50, height / 2 }, (vec2) { 100, height }, COLLISION_LAYER_TERRAIN);
+    render_insert_sprite(wall2, 0, (vec2) { 1, 1 }, WHITE);
 
     while (!input_get_quit_state()) {
         input_poll_events();
         time_update();
         render_begin();
 
-        render_bodies();
+        if (input_get_key_state(SDL_SCANCODE_A) == INPUT_HELD && input_get_key_state(SDL_SCANCODE_D) != INPUT_HELD)
+            block_body->acceleration[0] -= 100;
+        if (input_get_key_state(SDL_SCANCODE_A) == INPUT_RELEASED) {
+            block_body->velocity[0] = 0;
+            block_body->acceleration[0] = 0;
+        }
+        if (input_get_key_state(SDL_SCANCODE_D) == INPUT_HELD && input_get_key_state(SDL_SCANCODE_A) != INPUT_HELD)
+            block_body->acceleration[0] += 100;
+        if (input_get_key_state(SDL_SCANCODE_D) == INPUT_RELEASED) {
+            block_body->velocity[0] = 0;
+            block_body->acceleration[0] = 0;
+        }
+        if (input_get_key_state(SDL_SCANCODE_A) == INPUT_HELD && input_get_key_state(SDL_SCANCODE_D) == INPUT_HELD) {
+            block_body->velocity[0] = 0;
+            block_body->acceleration[0] = 0;
+        }
+        if (input_get_key_state(SDL_SCANCODE_SPACE) & (INPUT_PRESSED | INPUT_HELD) == input_get_key_state(SDL_SCANCODE_SPACE) && block_body->last_normal[1])
+            block_body->acceleration[1] = -2000;
 
-        if (input_get_key_state(SDL_SCANCODE_S) == INPUT_PRESSED)
-            printf("pressed s\n");
-        else if (input_get_key_state(SDL_SCANCODE_S) == INPUT_RELEASED)
-            printf("released s\n");
+        render_bodies();
 
         physics_update(time_get_delta());
 

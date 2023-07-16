@@ -1,5 +1,4 @@
 #include "input.h"
-#include <stdio.h>
 
 static Input states;
 
