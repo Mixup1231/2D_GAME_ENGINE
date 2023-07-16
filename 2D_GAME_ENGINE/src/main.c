@@ -5,31 +5,49 @@
 #include "engine/render/render.h"
 #include "engine/ecs/ecs.h"
 #include "engine/util.h"
+#include "engine/physics/physics.h"
 
 int main(int argc, char* argv[])
 {
     ecs_init();
+    time_init(144);
+    physics_init();
+    u32 width = 1920;
+    u32 height = 1080;
     SDL_Window* window = render_init(1920, 1080, "GAME");
 
     u32 grass_block = render_load_texture("C:\\Users\\Mitchell\\Pictures\\sprites\\grass_block.png", false);
 
-    ecs_register_component(int);
-    Bitset32 signature = bitset_create_32();
-    bitset_set_32(&signature, ecs_get_component_index(int));
-    ecs_insert_system(signature);
-
     usize entity = ecs_create_entity();
-    int* health = ecs_insert_component(int, entity);
-    *health = 100;
 
-    System entities = ecs_get_entities(signature);
-    for (usize i = 0; i < entities.length; i++)
-        printf("%d\n", *ecs_get_component(int, entities.entities[i]));
+    AABB* aabb = ecs_insert_component(AABB, entity);
+    aabb->position[0] = width / 2;
+    aabb->position[1] = height / 2;
+    aabb->half_size[0] = 50;
+    aabb->half_size[1] = 50;
+
+    DyanamicBody* body = ecs_insert_component(DyanamicBody, entity);
+    body->acceleration[0] = 0;
+    body->acceleration[1] = 0;
+    body->velocity[0] = 0;
+    body->velocity[1] = 0;
+    body->layer = COLLISION_LAYER_TERRAIN;
+
+    usize floor = ecs_create_entity();
+
+    AABB* faabb = ecs_insert_component(AABB, floor);
+    faabb->position[0] = width / 2;
+    faabb->position[1] = height - 50;
+    faabb->half_size[0] = width / 2;
+    faabb->half_size[1] = 100;
+
+    StaticBody* fbody = ecs_insert_component(StaticBody, floor);
+    fbody->layer = COLLISION_LAYER_TERRAIN;
 
     bool should_close = false;
     while (!should_close) {
         SDL_Event event;
-        
+
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
             case SDL_QUIT:
@@ -38,11 +56,16 @@ int main(int argc, char* argv[])
             }
         }
 
+        time_update();
+
         render_begin();
 
-        render_quad((vec2){1920 / 2, 1080 / 2}, (vec2){50, 50}, WHITE, grass_block);
-        render_line((vec2){ 0, 0 }, (vec2){ 1920 / 2, 1080 / 2 }, CYAN, 3);
+        render_quad(aabb->position, (vec2) { aabb->half_size[0] * 2, aabb->half_size[1] * 2 }, WHITE, grass_block);
+        render_quad(faabb->position, (vec2) { faabb->half_size[0] * 2, faabb->half_size[1] * 2 }, WHITE, 0);
+        physics_update(time_get_delta());
 
         render_end();
+
+        time_update_late();
     }
 }
