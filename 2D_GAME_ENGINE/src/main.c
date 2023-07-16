@@ -13,6 +13,19 @@ int main(int argc, char* argv[])
 
     u32 grass_block = render_load_texture("C:\\Users\\Mitchell\\Pictures\\sprites\\grass_block.png", false);
 
+    ecs_register_component(int);
+    Bitset32 signature = bitset_create_32();
+    bitset_set_32(&signature, ecs_get_component_index(int));
+    ecs_insert_system(signature);
+
+    usize entity = ecs_create_entity();
+    int* health = ecs_insert_component(int, entity);
+    *health = 100;
+
+    System entities = ecs_get_entities(signature);
+    for (usize i = 0; i < entities.length; i++)
+        printf("%d\n", *ecs_get_component(int, entities.entities[i]));
+
     bool should_close = false;
     while (!should_close) {
         SDL_Event event;

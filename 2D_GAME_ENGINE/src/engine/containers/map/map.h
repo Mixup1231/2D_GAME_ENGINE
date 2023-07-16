@@ -8,7 +8,8 @@
 #define CANTOUR_PAIR(a, b)  (0.5 * (a + b) * (a + b + 1) + b)
 #define MAP_LENGTH 1000
 
-size_t hash_uint(size_t* key);
+size_t hash_uint(uint32_t* key);
+size_t hash_size(size_t* key);
 size_t hash_uint_pair(size_t* key);
 size_t hash_uint_triplet(size_t* key);
 size_t hash_string(const char* string);

@@ -6,7 +6,12 @@
 #include "map.h"
 
 /***************************************************************/
-size_t hash_uint(size_t* key) {
+size_t hash_uint(uint32_t* key) {
+	assert(key);
+	return (size_t)CANTOUR_PAIR(key[0], key[0]);
+}
+
+size_t hash_size(size_t* key) {
 	assert(key);
 	return (size_t)CANTOUR_PAIR(key[0], key[0]);
 }
