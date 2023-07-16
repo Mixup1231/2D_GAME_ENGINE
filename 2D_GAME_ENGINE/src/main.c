@@ -6,6 +6,7 @@
 #include "engine/ecs/ecs.h"
 #include "engine/util.h"
 #include "engine/physics/physics.h"
+#include "engine/input/input.h"
 
 Bitset32 render_bodies_signature;
 
@@ -26,6 +27,7 @@ int main(int argc, char* argv[])
     ecs_init();
     time_init(144);
     physics_init();
+    input_init();
     u32 width = 1920;
     u32 height = 1080;
     SDL_Window* window = render_init(1920, 1080, "GAME");
@@ -45,27 +47,21 @@ int main(int argc, char* argv[])
     physics_insert_static_body(floor, (vec2) { width / 2, height - 50 }, (vec2) { width, 100 }, COLLISION_LAYER_TERRAIN);
     render_insert_sprite(floor, 0, (vec2) { 1, 1 }, WHITE);
 
-    bool should_close = false;
-    while (!should_close) {
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-            case SDL_QUIT:
-                should_close = true;
-                break;
-            }
-        }
-
+    while (!input_get_quit_state()) {
+        input_poll_events();
         time_update();
-
         render_begin();
+
         render_bodies();
-        
+
+        if (input_get_key_state(SDL_SCANCODE_S) == INPUT_PRESSED)
+            printf("pressed s\n");
+        else if (input_get_key_state(SDL_SCANCODE_S) == INPUT_RELEASED)
+            printf("released s\n");
+
         physics_update(time_get_delta());
 
         render_end();
-
         time_update_late();
     }
 }
