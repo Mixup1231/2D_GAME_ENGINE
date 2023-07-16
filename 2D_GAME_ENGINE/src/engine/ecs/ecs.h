@@ -18,7 +18,7 @@
 #define ecs_get_component(type, entity)\
 	(type*)ecs_get_component_impl(#type, entity)
 
-#define ecs_get_component_index(type, entity)\
+#define ecs_get_component_index(type)\
 	ecs_get_component_index_impl(#type)
 
 #define MAX_ENTITIES 1000

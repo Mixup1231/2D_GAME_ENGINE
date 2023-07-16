@@ -6,6 +6,7 @@
 #include "../containers/map/map.h"
 #include "../io/image_io.h"
 #include "../util.h"
+#include "../ecs/ecs.h"
 
 static SDL_Window* window;
 
@@ -44,6 +45,8 @@ SDL_Window* render_init(u32 width, u32 height, const char* window_name) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     texture_map = map_create(sizeof(u32), hash_string);
+
+    ecs_register_component(Sprite);
     
     return window;
 }
@@ -167,4 +170,11 @@ u32 render_load_texture(const char* path, bool flip) {
     map_insert(texture_map, path, &texture_id);
 
     return texture_id;
+}
+
+void render_insert_sprite(usize entity, u32 texture_id, vec2 scale, vec4 colour) {
+    Sprite* sprite = ecs_insert_component(Sprite, entity);
+    sprite->texture_id = texture_id;
+    memcpy(sprite->scale, scale, sizeof(vec2));
+    memcpy(sprite->colour, colour, sizeof(vec4));
 }
