@@ -133,6 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\engine\containers\array_list\array_list.c" />
     <ClCompile Include="src\engine\containers\linked_list\linked_list.c" />
     <ClCompile Include="src\engine\containers\map\map.c" />
     <ClCompile Include="src\engine\ecs\ecs.c" />
@@ -140,13 +141,16 @@
     <ClCompile Include="src\engine\io\file_io.c" />
     <ClCompile Include="src\engine\io\image_io.c" />
     <ClCompile Include="src\engine\io\serialise.c" />
+    <ClCompile Include="src\engine\physics\physics.c" />
     <ClCompile Include="src\engine\render\render.c" />
     <ClCompile Include="src\engine\render\render_init.c" />
     <ClCompile Include="src\engine\containers\stack\stack.c" />
+    <ClCompile Include="src\engine\time\time.c" />
     <ClCompile Include="src\main.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\linmath.h" />
+    <ClInclude Include="src\engine\containers\array_list\array_list.h" />
     <ClInclude Include="src\engine\containers\bitset\bitset.h" />
     <ClInclude Include="src\engine\containers\linked_list\linked_list.h" />
     <ClInclude Include="src\engine\containers\map\map.h" />
@@ -156,10 +160,12 @@
     <ClInclude Include="src\engine\io\serialise.h" />
     <ClInclude Include="src\engine\linked_list\linked_list.h" />
     <ClInclude Include="src\engine\map\map.h" />
+    <ClInclude Include="src\engine\physics\physics.h" />
     <ClInclude Include="src\engine\render\render.h" />
     <ClInclude Include="src\engine\render\render_internal.h" />
     <ClInclude Include="src\engine\containers\stack\stack.h" />
     <ClInclude Include="include\stb_image.h" />
+    <ClInclude Include="src\engine\time\time.h" />
     <ClInclude Include="src\engine\types.h" />
     <ClInclude Include="src\engine\util.h" />
   </ItemGroup>

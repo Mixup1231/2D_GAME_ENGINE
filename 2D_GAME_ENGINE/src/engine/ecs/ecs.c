@@ -104,12 +104,15 @@ void ecs_delete_entity(usize entity) {
 	assert(0 <= entity && entity < MAX_ENTITIES);
 	assert(map_contains(ecs->signatures, &entity));
 
-	bool signature[MAX_COMPONENTS];
-	memcpy(&signature, map_get(ecs->signatures, &entity), MAX_COMPONENTS);
+	Bitset32* signature = (Bitset32*)map_get(ecs->signatures, &entity);
 
 	for (usize i = 0; i < ecs->length; i++)
-		if (signature[i])
+		if (bitset_test_32(signature, i))
 			component_array_remove(&ecs->components[i], entity);
+
+	for (usize i = 0; i < ecs->systems_inserted; i++)
+		if (bitset_and_compare_32(signature, &ecs->systems[i].mask))
+			system_remove_entity(&ecs->systems[i], entity);
 
 	stack_push(&ecs->entities, &entity);
 	map_remove(ecs->signatures, &entity);
@@ -120,7 +123,7 @@ void ecs_register_component_impl(const char* name, usize component_size) {
 	assert(!map_contains(ecs->component_index, name));
 
 	map_insert(ecs->component_index, name, &ecs->length);
-	component_array_init(&ecs->components[ecs->length], sizeof(component_size));
+	component_array_init(&ecs->components[ecs->length], component_size);
 	ecs->length++;
 }
 
@@ -180,8 +183,8 @@ void ecs_insert_system(Bitset32 mask) {
 	ecs->systems_inserted++;
 }
 
-System ecs_get_entities(Bitset32 mask) {
+const System* ecs_get_entities(Bitset32 mask) {
 	assert(map_contains(ecs->mask_system, &mask.bits));
 
-	return ecs->systems[*(usize*)map_get(ecs->mask_system, &mask.bits)];
+	return &ecs->systems[*(usize*)map_get(ecs->mask_system, &mask.bits)];
 }

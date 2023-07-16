@@ -74,4 +74,4 @@ void ecs_remove_component_impl(const char* name, usize entity);
 void* ecs_get_component_impl(const char* name, usize entity);
 usize ecs_get_component_index_impl(const char* name);
 void ecs_insert_system(Bitset32 mask);
-System ecs_get_entities(Bitset32 mask);
+const System* ecs_get_entities(Bitset32 mask);

@@ -48,6 +48,15 @@
     <ClCompile Include="src\engine\containers\map\map.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\time\time.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\engine\physics\physics.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\engine\containers\array_list\array_list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\ecs\ecs.h">
@@ -96,6 +105,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\containers\bitset\bitset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\time\time.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\physics\physics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\containers\array_list\array_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
