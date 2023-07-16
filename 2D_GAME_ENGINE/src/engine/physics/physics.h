@@ -22,7 +22,7 @@ typedef struct {
 	vec2 velocity;
 	CollisionLayer layer;
 	vec2 last_normal;
-} DyanamicBody;
+} DynamicBody;
 
 typedef struct {
 	vec2 position;
@@ -36,3 +36,5 @@ bool physics_aabb_point_intersect(vec2 point, AABB aabb);
 bool physics_aabb_rectangle_intersect(AABB a, AABB b);
 void physics_update(f32 dt);
 Hit physics_aabb_ray_intersect(vec2 position, vec2 direction, AABB target);
+void physics_insert_dynamic_body(usize entity, vec2 position, vec2 size, CollisionLayer layer);
+void physics_insert_static_body(usize entity, vec2 position, vec2 size, CollisionLayer layer);

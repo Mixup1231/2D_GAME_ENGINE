@@ -41,9 +41,6 @@ static inline bool bitset_test_##x(Bitset##x##* bitset, size_t bit) {\
 static inline void bitset_clear_##x(Bitset##x##* bitset) {\
 	bitset->bits = 0;\
 }\
-static inline bool bitset_and_compare_##x(Bitset##x##* a, Bitset##x##* b) {\
-	return (a->bits & b->bits) == b->bits;\
-}\
 
 BITSET(char, 8)
 BITSET(uint16_t, 16)

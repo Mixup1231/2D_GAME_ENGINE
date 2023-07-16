@@ -9,10 +9,13 @@ static f32 accumulator;
 static f32 tick_rate;
 static const u32 max_iterations = 10;
 static u32 current_iterations;
+
 static Bitset32 dynamic_body_signature;
 static Bitset32 static_body_signature;
+
 vec2 physics_gravity = { 0, 10 };
 vec2 physics_terminal_velocity = { 1000, 1000 };
+
 static ArrayList collided;
 
 static bool physics_array_list_callback(void* a, void* b) {
@@ -33,10 +36,10 @@ void physics_init(void) {
 	bitset_set_32(&static_body_signature, ecs_get_component_index(StaticBody));
 	ecs_insert_system(static_body_signature);
 
-	ecs_register_component(DyanamicBody);
+	ecs_register_component(DynamicBody);
 
 	bitset_set_32(&dynamic_body_signature, ecs_get_component_index(AABB));
-	bitset_set_32(&dynamic_body_signature, ecs_get_component_index(DyanamicBody));
+	bitset_set_32(&dynamic_body_signature, ecs_get_component_index(DynamicBody));
 	ecs_insert_system(dynamic_body_signature);
 
 	collided = array_list_create(0, sizeof(Hit));
@@ -65,17 +68,17 @@ bool physics_aabb_rectangle_intersect(AABB a, AABB b) {
 	return physics_aabb_point_intersect(a.position, sum);
 }
 
-void physics_update_dynamic_bodies(void) {
+static void physics_update_dynamic_bodies(void) {
 	System* dynamic_bodies = ecs_get_entities(dynamic_body_signature);
 	System* static_bodies = ecs_get_entities(static_body_signature);
 
 	for (usize i = 0; i < dynamic_bodies->length; i++) {
-		DyanamicBody* body = ecs_get_component(DyanamicBody, dynamic_bodies->entities[i]);
+		DynamicBody* body = ecs_get_component(DynamicBody, dynamic_bodies->entities[i]);
 		AABB* body_aabb = ecs_get_component(AABB, dynamic_bodies->entities[i]);
 		
 		vec2 terminal_velocity_cache = {
-		tick_rate * physics_terminal_velocity[0],
-		tick_rate * physics_terminal_velocity[1]
+			tick_rate * physics_terminal_velocity[0],
+			tick_rate * physics_terminal_velocity[1]
 		};
 
 		vec2_add(body->acceleration, body->acceleration, physics_gravity);
@@ -194,8 +197,7 @@ Hit physics_aabb_ray_intersect(vec2 position, vec2 direction, AABB target) {
 			hit.normal[0] = 1;
 			hit.normal[1] = 0;
 		}
-	}
-	else {
+	} else {
 		if (direction[1] > 0) {
 			hit.normal[0] = 0;
 			hit.normal[1] = -1;
@@ -209,4 +211,26 @@ Hit physics_aabb_ray_intersect(vec2 position, vec2 direction, AABB target) {
 	hit.is_hit = true;
 
 	return hit;
+}
+
+void physics_insert_dynamic_body(usize entity, vec2 position, vec2 size, CollisionLayer layer) {
+	AABB* aabb = ecs_insert_component(AABB, entity);
+	memcpy(&aabb->position, position, sizeof(vec2));
+	aabb->half_size[0] = size[0] * 0.5;
+	aabb->half_size[1] = size[1] * 0.5;
+
+	DynamicBody* body = ecs_insert_component(DynamicBody, entity);
+	vec2_scale(body->velocity, body->velocity, 0);
+	vec2_scale(body->acceleration, body->acceleration, 0);
+	body->layer = layer;
+}
+
+void physics_insert_static_body(usize entity, vec2 position, vec2 size, CollisionLayer layer) {
+	AABB* aabb = ecs_insert_component(AABB, entity);
+	memcpy(&aabb->position, position, sizeof(vec2));
+	aabb->half_size[0] = size[0] * 0.5;
+	aabb->half_size[1] = size[1] * 0.5;
+
+	StaticBody* body = ecs_insert_component(StaticBody, entity);
+	body->layer = layer;
 }

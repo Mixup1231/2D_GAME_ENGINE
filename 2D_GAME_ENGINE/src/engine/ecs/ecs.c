@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "ecs.h"
 
@@ -63,6 +64,10 @@ void system_insert_entity(System* system, usize entity) {
 	assert(system->length < MAX_SYSTEMS);
 	assert(0 <= entity && entity < MAX_ENTITIES);
 
+	for (usize i = 0; i < system->length; i++)
+		if (system->entities[i] == entity)
+			return;
+
 	system->entities[system->length++] = entity;
 }
 
@@ -111,7 +116,7 @@ void ecs_delete_entity(usize entity) {
 			component_array_remove(&ecs->components[i], entity);
 
 	for (usize i = 0; i < ecs->systems_inserted; i++)
-		if (bitset_and_compare_32(signature, &ecs->systems[i].mask))
+		if ((ecs->systems[i].mask.bits & signature->bits) == ecs->systems[i].mask.bits)
 			system_remove_entity(&ecs->systems[i], entity);
 
 	stack_push(&ecs->entities, &entity);
@@ -136,8 +141,9 @@ void* ecs_insert_component_impl(const char* name, usize entity) {
 	assert(!bitset_test_32(signature, comp_index));
 
 	bitset_set_32(signature, comp_index);
-	if (map_contains(ecs->mask_system, &signature->bits))
-		system_insert_entity(&ecs->systems[*(usize*)map_get(ecs->mask_system, &signature->bits)], entity);
+	for (usize i = 0; i < ecs->systems_inserted; i++)
+		if ((ecs->systems[i].mask.bits & signature->bits) == ecs->systems[i].mask.bits)
+			system_insert_entity(&ecs->systems[i], entity);
 	
 	return component_array_insert(&ecs->components[comp_index], entity);
 }
@@ -150,8 +156,10 @@ void ecs_remove_component_impl(const char* name, usize entity) {
 	usize comp_index = *(usize*)map_get(ecs->component_index, name);
 	assert(bitset_test_32(signature, comp_index));
 
-	if (map_contains(ecs->systems, &signature->bits))
-		system_remove_entity(&ecs->systems[*(usize*)map_get(ecs->mask_system, &signature->bits)], entity);
+	for (usize i = 0; i < ecs->systems_inserted; i++)
+		if ((ecs->systems[i].mask.bits & signature->bits) == ecs->systems[i].mask.bits)
+			system_remove_entity(&ecs->systems[i], entity);
+
 	bitset_zero_32(signature, comp_index);
 	component_array_remove(&ecs->components[comp_index], entity);
 }

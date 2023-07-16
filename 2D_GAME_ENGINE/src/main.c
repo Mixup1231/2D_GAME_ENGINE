@@ -7,6 +7,20 @@
 #include "engine/util.h"
 #include "engine/physics/physics.h"
 
+Bitset32 render_bodies_signature;
+
+void render_bodies(void) {
+    System* system = ecs_get_entities(render_bodies_signature);
+    for (usize i = 0; i < system->length; i++) {
+        Sprite* sprite = ecs_get_component(Sprite, system->entities[i]);
+        AABB* aabb = ecs_get_component(AABB, system->entities[i]);
+        static vec2 size;
+        size[0] = sprite->scale[0] * (aabb->half_size[0] * 2);
+        size[1] = sprite->scale[1] * (aabb->half_size[1] * 2);
+        render_quad(aabb->position, size, sprite->colour, sprite->texture_id);
+    }
+}
+
 int main(int argc, char* argv[])
 {
     ecs_init();
@@ -16,33 +30,20 @@ int main(int argc, char* argv[])
     u32 height = 1080;
     SDL_Window* window = render_init(1920, 1080, "GAME");
 
+    render_bodies_signature = bitset_create_32();
+    bitset_set_32(&render_bodies_signature, ecs_get_component_index(AABB));
+    bitset_set_32(&render_bodies_signature, ecs_get_component_index(Sprite));
+    ecs_insert_system(render_bodies_signature);
+
     u32 grass_block = render_load_texture("C:\\Users\\Mitchell\\Pictures\\sprites\\grass_block.png", false);
 
-    usize entity = ecs_create_entity();
-
-    AABB* aabb = ecs_insert_component(AABB, entity);
-    aabb->position[0] = width / 2;
-    aabb->position[1] = height / 2;
-    aabb->half_size[0] = 50;
-    aabb->half_size[1] = 50;
-
-    DyanamicBody* body = ecs_insert_component(DyanamicBody, entity);
-    body->acceleration[0] = 0;
-    body->acceleration[1] = 0;
-    body->velocity[0] = 0;
-    body->velocity[1] = 0;
-    body->layer = COLLISION_LAYER_TERRAIN;
+    usize block = ecs_create_entity();
+    physics_insert_dynamic_body(block, (vec2) { width / 2, height / 2 }, (vec2) { 50, 50 }, COLLISION_LAYER_TERRAIN);
+    render_insert_sprite(block, grass_block, (vec2) { 1, 1 }, WHITE);
 
     usize floor = ecs_create_entity();
-
-    AABB* faabb = ecs_insert_component(AABB, floor);
-    faabb->position[0] = width / 2;
-    faabb->position[1] = height - 50;
-    faabb->half_size[0] = width / 2;
-    faabb->half_size[1] = 100;
-
-    StaticBody* fbody = ecs_insert_component(StaticBody, floor);
-    fbody->layer = COLLISION_LAYER_TERRAIN;
+    physics_insert_static_body(floor, (vec2) { width / 2, height - 50 }, (vec2) { width, 100 }, COLLISION_LAYER_TERRAIN);
+    render_insert_sprite(floor, 0, (vec2) { 1, 1 }, WHITE);
 
     bool should_close = false;
     while (!should_close) {
@@ -59,9 +60,8 @@ int main(int argc, char* argv[])
         time_update();
 
         render_begin();
-
-        render_quad(aabb->position, (vec2) { aabb->half_size[0] * 2, aabb->half_size[1] * 2 }, WHITE, grass_block);
-        render_quad(faabb->position, (vec2) { faabb->half_size[0] * 2, faabb->half_size[1] * 2 }, WHITE, 0);
+        render_bodies();
+        
         physics_update(time_get_delta());
 
         render_end();
