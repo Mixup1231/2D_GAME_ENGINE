@@ -33,7 +33,7 @@ size_t hash_string(const char* string) {
 	size_t length = strlen(string);
 	size_t total = 0;
 	for (size_t i = 0; i < length; i++)
-		total += string[i] * (size_t)pow(p, i);
+		total = p * total + string[i];
 
 	return total;
 }
