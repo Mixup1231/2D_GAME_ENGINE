@@ -7,7 +7,7 @@
 
 static f32 accumulator;
 static f32 tick_rate;
-static const u32 max_iterations = 10;
+static const u32 max_iterations = 5;
 static u32 current_iterations;
 
 static Bitset32 dynamic_body_signature;
@@ -150,6 +150,7 @@ void physics_update(f32 dt) {
 	while (accumulator >= tick_rate && current_iterations < max_iterations) {
 		physics_update_dynamic_bodies();
 		accumulator -= tick_rate;
+		current_iterations++;
 	}
 	current_iterations = 0;
 }
