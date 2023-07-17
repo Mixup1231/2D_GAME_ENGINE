@@ -34,8 +34,8 @@ void render_load_sprite_sheet(SpriteSheet* sheet, const char* path, f32 cell_wid
     sheet->texture_id = render_load_texture(path, false, &sheet->texture_width, &sheet->texture_height);
     sheet->cell_width = cell_width;
     sheet->cell_height = cell_height;
-    memcpy(sheet->scale, scale, sizeof(vec2));
-    memcpy(sheet->colour, colour, sizeof(vec4));
+    memcpy_s(sheet->scale, sizeof(vec2), scale, sizeof(vec2));
+    memcpy_s(sheet->colour, sizeof(vec4), colour, sizeof(vec4));
 }
 
 AnimatedSprite render_create_animated_sprite(f32 hold_time) {
@@ -329,4 +329,5 @@ void render_insert_sprite_sheet(usize entity, const char* path, f32 cell_width, 
 AnimatedSprite* render_insert_animated_sprite(usize entity, f32 hold_time) {
     AnimatedSprite* animation = ecs_insert_component(AnimatedSprite, entity);
     *animation = render_create_animated_sprite(hold_time);
+    return animation;
 }

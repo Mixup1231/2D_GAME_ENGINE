@@ -118,6 +118,7 @@ static void physics_update_dynamic_bodies(void) {
 				static_aabb.half_size[1] += body_aabb->half_size[1];
 
 				Hit hit = physics_aabb_ray_intersect(body_aabb->position, body->velocity, static_aabb);
+				hit.static_entity = static_bodies->entities[j];
 				if (hit.is_hit)
 					array_list_insert_sorted(&collided, &hit, physics_array_list_callback);
 			}
@@ -134,6 +135,9 @@ static void physics_update_dynamic_bodies(void) {
 		if (!collided.length) {
 			body->last_normal[0] = 0;
 			body->last_normal[1] = 0;
+		} else {
+			if (body->callback)
+				body->callback(*(Hit*)array_list_get(&collided, collided.length - 1), dynamic_bodies->entities[i]);
 		}
 
 		usize length = collided.length;
@@ -143,6 +147,34 @@ static void physics_update_dynamic_bodies(void) {
 		body_aabb->position[0] += body->velocity[0];
 		body_aabb->position[1] += body->velocity[1];
 	}
+}
+
+DynamicBodyOverlaps physics_dynamic_body_overlap(usize entity) {
+	DynamicBodyOverlaps overlaps = { .length = 0 };
+	System* bodies = ecs_get_entities(dynamic_body_signature);
+
+	AABB* entity_aabb = ecs_get_component(AABB, entity);
+	DynamicBody* entity_body = ecs_get_component(DynamicBody, entity);
+	
+	AABB other_aabb;
+	DynamicBody* other_body = NULL;
+
+	for (usize i = 0; i < bodies->length; i++) {
+		if (bodies->entities[i] == entity)
+			continue;
+		
+		other_aabb = *ecs_get_component(AABB, bodies->entities[i]);
+		other_body = ecs_get_component(DynamicBody, bodies->entities[i]);
+		vec2_add(other_aabb.half_size, other_aabb.half_size, entity_aabb->half_size);
+
+		if ((other_body->layer & entity_body->layer) && physics_aabb_point_intersect(entity_aabb->position, other_aabb))
+			overlaps.entities[overlaps.length++] = bodies->entities[i];
+
+		if (overlaps.length == MAX_DYNAMIC_BODY_OVERLAPS)
+			break;
+	}
+
+	return overlaps;
 }
 
 void physics_update(f32 dt) {
@@ -214,7 +246,7 @@ Hit physics_aabb_ray_intersect(vec2 position, vec2 direction, AABB target) {
 	return hit;
 }
 
-void physics_insert_dynamic_body(usize entity, vec2 position, vec2 size, CollisionLayer layer) {
+void physics_insert_dynamic_body(usize entity, vec2 position, vec2 size, CollisionLayer layer, collision_callback* callback) {
 	AABB* aabb = ecs_insert_component(AABB, entity);
 	memcpy(&aabb->position, position, sizeof(vec2));
 	aabb->half_size[0] = size[0] * 0.5;
@@ -224,6 +256,7 @@ void physics_insert_dynamic_body(usize entity, vec2 position, vec2 size, Collisi
 	vec2_scale(body->velocity, body->velocity, 0);
 	vec2_scale(body->acceleration, body->acceleration, 0);
 	body->layer = layer;
+	body->callback = callback;
 }
 
 void physics_insert_static_body(usize entity, vec2 position, vec2 size, CollisionLayer layer) {
