@@ -61,7 +61,7 @@ System system_create(Bitset32 mask) {
 }
 
 void system_insert_entity(System* system, usize entity) {
-	assert(system->length < MAX_SYSTEMS);
+	assert(system->length < MAX_ENTITIES);
 	assert(0 <= entity && entity < MAX_ENTITIES);
 
 	for (usize i = 0; i < system->length; i++)
