@@ -246,7 +246,7 @@ Hit physics_aabb_ray_intersect(vec2 position, vec2 direction, AABB target) {
 	return hit;
 }
 
-void physics_insert_dynamic_body(usize entity, vec2 position, vec2 size, CollisionLayer layer, collision_callback* callback) {
+DynamicBody* physics_insert_dynamic_body(usize entity, vec2 position, vec2 size, CollisionLayer layer, collision_callback* callback) {
 	AABB* aabb = ecs_insert_component(AABB, entity);
 	memcpy(&aabb->position, position, sizeof(vec2));
 	aabb->half_size[0] = size[0] * 0.5;
@@ -257,9 +257,11 @@ void physics_insert_dynamic_body(usize entity, vec2 position, vec2 size, Collisi
 	vec2_scale(body->acceleration, body->acceleration, 0);
 	body->layer = layer;
 	body->callback = callback;
+
+	return body;
 }
 
-void physics_insert_static_body(usize entity, vec2 position, vec2 size, CollisionLayer layer) {
+StaticBody* physics_insert_static_body(usize entity, vec2 position, vec2 size, CollisionLayer layer) {
 	AABB* aabb = ecs_insert_component(AABB, entity);
 	memcpy(&aabb->position, position, sizeof(vec2));
 	aabb->half_size[0] = size[0] * 0.5;
@@ -267,4 +269,6 @@ void physics_insert_static_body(usize entity, vec2 position, vec2 size, Collisio
 
 	StaticBody* body = ecs_insert_component(StaticBody, entity);
 	body->layer = layer;
+
+	return body;
 }

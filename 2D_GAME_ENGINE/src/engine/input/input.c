@@ -50,8 +50,39 @@ InputState input_get_key_state(SDL_Scancode code) {
 	return states.keys[code];
 }
 
+bool input_is_key_pressed(SDL_Scancode code) {
+	return states.keys[code] == INPUT_PRESSED;
+}
+
+bool input_is_key_held(SDL_Scancode code) {
+	return states.keys[code] == INPUT_HELD;
+}
+
+bool input_is_key_released(SDL_Scancode code) {
+	return states.keys[code] == INPUT_RELEASED;
+}
+
+bool input_is_key_unpressed(SDL_Scancode code) {
+	return states.keys[code] == INPUT_UNPRESSED;
+}
+
 InputState input_get_mouse_state(u16 button) {
 	return states.mouse_buttons[button];
+}
+bool input_is_mouse_pressed(u16 button) {
+	return states.mouse_buttons[button] == INPUT_PRESSED;
+}
+
+bool input_is_mouse_held(u16 button) {
+	return states.mouse_buttons[button] == INPUT_HELD;
+}
+
+bool input_is_mouse_released(u16 button) {
+	return states.mouse_buttons[button] == INPUT_RELEASED;
+}
+
+bool input_is_mouse_unpressed(u16 button) {
+	return states.mouse_buttons[button] == INPUT_UNPRESSED;
 }
 
 void input_get_mouse_position(u32* x, u32* y) {

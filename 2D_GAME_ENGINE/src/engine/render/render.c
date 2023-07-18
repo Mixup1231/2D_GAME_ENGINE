@@ -9,6 +9,8 @@
 #include "../ecs/ecs.h"
 
 static SDL_Window* window;
+static u32 window_width;
+static u32 window_height;
 
 static Map* texture_map;
 
@@ -24,21 +26,21 @@ static u32 vbo_line;
 static u32 vao_line;
 
 void render_load_sprite(Sprite* sprite, const char* path, vec2 scale, vec4 colour) {
-    sprite->texture_id = render_load_texture(path, false, NULL, NULL);
+    sprite->texture = render_load_texture(path, false, NULL, NULL);
     memcpy(sprite->scale, scale, sizeof(vec2));
     memcpy(sprite->colour, colour, sizeof(vec4));
     return sprite;
 }
 
 void render_load_sprite_sheet(SpriteSheet* sheet, const char* path, f32 cell_width, f32 cell_height, vec2 scale, vec4 colour) {
-    sheet->texture_id = render_load_texture(path, false, &sheet->texture_width, &sheet->texture_height);
+    sheet->texture = render_load_texture(path, false);
     sheet->cell_width = cell_width;
     sheet->cell_height = cell_height;
     memcpy_s(sheet->scale, sizeof(vec2), scale, sizeof(vec2));
     memcpy_s(sheet->colour, sizeof(vec4), colour, sizeof(vec4));
 }
 
-AnimatedSprite render_create_animated_sprite(f32 hold_time) {
+AnimatedSprite render_create_animated_sprite(void) {
     AnimatedSprite animation = {
         .column = 0,
         .columns = 0,
@@ -46,17 +48,19 @@ AnimatedSprite render_create_animated_sprite(f32 hold_time) {
         .rows = 0,
         .current_sheet = 0,
         .sheets_length = 0,
-        .hold_time = hold_time,
         .current_time = 0
     };
+
+    memset(animation.hold_times, 0, sizeof(f32) * MAX_ANIMATION_SPRITE_SHEETS);
 
     return animation;
 }
 
-void render_push_animated_sheet(AnimatedSprite* animation, const char* path, f32 cell_width, f32 cell_height, vec2 scale, vec4 colour) {
+void render_push_animated_sheet(AnimatedSprite* animation, const char* path, f32 cell_width, f32 cell_height, vec2 scale, vec4 colour, f32 hold_time) {
     assert(animation && animation->sheets_length < MAX_ANIMATION_SPRITE_SHEETS);
 
     render_load_sprite_sheet(&animation->sheets[animation->sheets_length], path, cell_width, cell_height, scale, colour);
+    animation->hold_times[animation->sheets_length] = hold_time;
     animation->sheets_length++;
     render_change_animated_sheet(animation, animation->sheets_length - 1);
 }
@@ -68,22 +72,24 @@ void render_change_animated_sheet(AnimatedSprite* animation, u32 sheet) {
     animation->current_sheet = sheet;
     animation->column = 0;
     animation->row = 0;
-    animation->columns = animation->sheets[animation->current_sheet].texture_width / animation->sheets[animation->current_sheet].cell_width;
-    animation->rows = animation->sheets[animation->current_sheet].texture_height / animation->sheets[animation->current_sheet].cell_height;
+    animation->columns = animation->sheets[animation->current_sheet].texture.width / animation->sheets[animation->current_sheet].cell_width;
+    animation->rows = animation->sheets[animation->current_sheet].texture.height / animation->sheets[animation->current_sheet].cell_height;
 }
 
 void render_update_animation(AnimatedSprite* animation, f32 dt) {
     assert(animation);
 
     animation->current_time += dt;
-    while (animation->current_time >= animation->hold_time) {
+    while (animation->current_time >= animation->hold_times[animation->current_sheet]) {
         animation->column = (animation->column + 1) % animation->columns;
-        animation->current_time -= animation->hold_time;
+        animation->current_time -= animation->hold_times[animation->current_sheet];
     }
 }
 
 SDL_Window* render_init(u32 width, u32 height, const char* window_name) {
     window = render_init_window(width, height, window_name);
+    window_width = width;
+    window_height = height;
     
     default_shader = render_init_shaders("shaders/shader_default.vert", "shaders/shader_default.frag");
     default_shader_sheet = render_init_shaders("shaders/shader_default_sheet.vert", "shaders/shader_default.frag");
@@ -114,7 +120,7 @@ SDL_Window* render_init(u32 width, u32 height, const char* window_name) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    texture_map = map_create(sizeof(u32), hash_string);
+    texture_map = map_create(sizeof(Texture), hash_string);
 
     ecs_register_component(Sprite);
     ecs_register_component(SpriteSheet);
@@ -130,6 +136,14 @@ void render_begin(void) {
 
 void render_end(void) {
     SDL_GL_SwapWindow(window);
+}
+
+u32 render_get_window_width(void) {
+    return window_width;
+}
+
+u32 render_get_window_height(void) {
+    return window_height;
 }
 
 void render_quad(vec2 position, vec2 size, vec4 colour, u32 texture) {
@@ -171,7 +185,7 @@ void render_sprite(Sprite* sprite, vec2 position, vec2 size) {
     static vec2 scaled_size;
     scaled_size[0] = size[0] * sprite->scale[0];
     scaled_size[1] = size[1] * sprite->scale[1];
-    render_quad(position, scaled_size, sprite->colour, sprite->texture_id);
+    render_quad(position, scaled_size, sprite->colour, sprite->texture.id);
 }
 
 static void calculate_sprite_sheet_uvs_shift(vec4 shift, f32 row, f32 column, f32 texture_width, f32 texture_height, f32 cell_width, f32 cell_height) {
@@ -185,14 +199,14 @@ static void calculate_sprite_sheet_uvs_shift(vec4 shift, f32 row, f32 column, f3
 
 void render_sprite_sheet(SpriteSheet* sheet, u32 row, u32 column, vec2 position, vec2 size) {
     static vec4 shift;
-    calculate_sprite_sheet_uvs_shift(shift, row, column, sheet->texture_width, sheet->texture_height, sheet->cell_width, sheet->cell_height);
+    calculate_sprite_sheet_uvs_shift(shift, row, column, sheet->texture.width, sheet->texture.height, sheet->cell_width, sheet->cell_height);
 
     glUseProgram(default_shader_sheet);
 
-    if (!sheet->texture_id)
+    if (!sheet->texture.id)
         glBindTexture(GL_TEXTURE_2D, default_texture);
     else
-        glBindTexture(GL_TEXTURE_2D, sheet->texture_id);
+        glBindTexture(GL_TEXTURE_2D, sheet->texture.id);
 
     glBindVertexArray(vao_quad);
 
@@ -268,17 +282,19 @@ void render_line(vec2 start, vec2 end, vec4 colour, u32 line_width) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-u32 render_load_texture(const char* path, bool flip, f32* width, f32* height) {
+Texture render_load_texture(const char* path, bool flip) {
+    Texture texture = { .id = 0, .width = 0, .height = 0 };
+
     if (map_contains(texture_map, path))
-        return *(u32*)map_get(texture_map, path);
+        return *(Texture*)map_get(texture_map, path);
 
     ImageFile image = io_image_read(path, flip);
     if (!image.is_valid)
-        ERROR_RETURN(0, "Failed to read image! %s\nReturning 0...\n", path);
+        ERROR_RETURN(texture, "Failed to read image! %s\nReturning 0...\n", path);
 
-    u32 texture_id;
-    glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
+    
+    glGenTextures(1, &texture.id);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -298,36 +314,38 @@ u32 render_load_texture(const char* path, bool flip, f32* width, f32* height) {
         break;
     default:
         io_image_free(image.image_data);
-        glDeleteTextures(1, &texture_id);
-        ERROR_RETURN(0, "Unsupported image channel count! %s\nReturning 0...\n", path);
+        glDeleteTextures(1, &texture.id);
+        ERROR_RETURN(texture, "Unsupported image channel count! %s\nReturning 0...\n", path);
     }
     
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    if (width)
-        *width = image.width;
-    if (height)
-        *height = image.height;
-
     io_image_free(image.image_data);
 
-    map_insert(texture_map, path, &texture_id);
+    texture.width = image.width;
+    texture.height = image.height;
+    map_insert(texture_map, path, &texture);
 
-    return texture_id;
+    return texture;
 }
 
-void render_insert_sprite(usize entity, const char* path, vec2 scale, vec4 colour) {
+Sprite* render_insert_sprite(usize entity, const char* path, vec2 scale, vec4 colour) {
     Sprite* sprite = ecs_insert_component(Sprite, entity);
     render_load_sprite(sprite, path, scale, colour);
+
+    return sprite;
 }
 
-void render_insert_sprite_sheet(usize entity, const char* path, f32 cell_width, f32 cell_height, vec2 scale, vec4 colour) {
+SpriteSheet* render_insert_sprite_sheet(usize entity, const char* path, f32 cell_width, f32 cell_height, vec2 scale, vec4 colour) {
     SpriteSheet* sheet = ecs_insert_component(SpriteSheet, entity);
     render_load_sprite_sheet(sheet, path, cell_width, cell_height, scale, colour);
+
+    return sheet;
 }
 
-AnimatedSprite* render_insert_animated_sprite(usize entity, f32 hold_time) {
+AnimatedSprite* render_insert_animated_sprite(usize entity) {
     AnimatedSprite* animation = ecs_insert_component(AnimatedSprite, entity);
-    *animation = render_create_animated_sprite(hold_time);
+    *animation = render_create_animated_sprite();
+
     return animation;
 }
