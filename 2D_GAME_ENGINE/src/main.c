@@ -22,7 +22,7 @@ void render_characters(void) {
 
 /*
 TODO:
-    add hold times for individual sprite sheets
+    
 */
 
 int main(int argc, char* argv[])
@@ -31,9 +31,9 @@ int main(int argc, char* argv[])
     time_init(144);
     physics_init();
     input_init();
-    u32 width = 1920;
-    u32 height = 1080;
     SDL_Window* window = render_init(1920, 1080, "GAME");
+    u32 width = render_get_window_width();
+    u32 height = render_get_window_height();
 
     update_characters_signature = bitset_create_32();
     bitset_set_32(&update_characters_signature, ecs_get_component_index(AnimatedSprite));
@@ -41,16 +41,15 @@ int main(int argc, char* argv[])
     ecs_insert_system(update_characters_signature);
 
     usize player = ecs_create_entity();
-    AnimatedSprite* animation = render_insert_animated_sprite(player, 0.1);
-    render_push_animated_sheet(animation, "assets/Player/idle.png", 128, 128, (vec2) { 1.5, 1.5 }, WHITE);
-    render_push_animated_sheet(animation, "assets/Player/run.png", 128, 128, (vec2) { 1.5, 1.5 }, WHITE);
-    render_push_animated_sheet(animation, "assets/Player/jump.png", 128, 128, (vec2) { 1.5, 1.5 }, WHITE);
+    AnimatedSprite* animation = render_insert_animated_sprite(player);
+    render_push_animated_sheet(animation, "assets/Player/idle.png", 128, 128, (vec2) { 1.5, 1.5 }, WHITE, 0.1);
+    render_push_animated_sheet(animation, "assets/Player/run.png", 128, 128, (vec2) { 1.5, 1.5 }, WHITE, 0.05);
+    render_push_animated_sheet(animation, "assets/Player/jump.png", 128, 128, (vec2) { 1.5, 1.5 }, WHITE, 0.1);
     animation->current_sheet = 0;
     vec2 size;
     size[0] = animation->sheets[0].cell_width  * animation->sheets[0].scale[0];
     size[1] = animation->sheets[0].cell_height * animation->sheets[0].scale[1];
-    physics_insert_dynamic_body(player, (vec2) { width / 2, height / 2 }, size, COLLISION_LAYER_TERRAIN, NULL);
-    DynamicBody* player_body = ecs_get_component(DynamicBody, player);
+    DynamicBody* player_body = physics_insert_dynamic_body(player, (vec2) { width / 2, height / 2 }, size, COLLISION_LAYER_TERRAIN, NULL);
     AABB* player_aabb = ecs_get_component(AABB, player);
 
     usize floor = ecs_create_entity();
